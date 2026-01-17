@@ -1,0 +1,9 @@
+%%bash
+cat << 'EOF' > requirements.txt
+streamlit
+ultralytics
+opencv-python-headless
+numpy
+torch
+torchvision
+EOF
