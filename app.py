@@ -4,7 +4,6 @@ import tempfile
 from ultralytics import YOLO
 import os
 
-# ---------------- Page config ----------------
 st.set_page_config(
     page_title="Vehicle Detection",
     page_icon="🚗",
@@ -12,55 +11,50 @@ st.set_page_config(
 )
 
 st.markdown("## 🚦 Vehicle Detection App")
-st.markdown("### 🎯 Upload a vehicle video and get detection result")
+st.markdown("### 🎯 Upload a vehicle video and download the processed result")
 st.markdown("**👨‍💻 Created by Gurudeep Soni**")
 st.markdown("---")
 
-# ---------------- Upload ----------------
 video = st.file_uploader("📤 Upload vehicle video", type=["mp4", "avi"])
 
 if video:
-    # Save uploaded video to temp file
-    temp_input = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-    temp_input.write(video.read())
-    temp_input.close()
+    # Save uploaded video
+    input_video = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
+    input_video.write(video.read())
+    input_video.close()
 
-    st.info("⏳ Loading model...")
+    st.info("⏳ Loading YOLO model...")
     model = YOLO("yolov8n.pt")
 
-    cap = cv2.VideoCapture(temp_input.name)
-
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    cap = cv2.VideoCapture(input_video.name)
 
     fps = int(cap.get(cv2.CAP_PROP_FPS))
     if fps <= 0:
-        fps = 30  # fallback for Streamlit Cloud
+        fps = 30
 
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    # Output video as temp file
-    temp_output = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-    temp_output.close()
+    output_video = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
+    output_video.close()
 
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    out = cv2.VideoWriter(temp_output.name, fourcc, fps, (width, height))
+    out = cv2.VideoWriter(output_video.name, fourcc, fps, (width, height))
 
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     progress_bar = st.progress(0)
     status = st.empty()
 
     frame_count = 0
     st.success("🚀 Processing started...")
 
-    # ---------------- Processing ----------------
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
 
         results = model(frame)
-        annotated = results[0].plot()
-        out.write(annotated)
+        out.write(results[0].plot())
 
         frame_count += 1
         if total_frames > 0:
@@ -74,13 +68,14 @@ if video:
     progress_bar.progress(100)
     status.text("✅ Processing complete!")
 
-    st.markdown("### 🎥 Output Video")
+    st.markdown("### 📥 Download Result")
 
-    # ---------------- Display video ----------------
-    if os.path.exists(temp_output.name) and os.path.getsize(temp_output.name) > 0:
-        with open(temp_output.name, "rb") as f:
-            st.video(f.read())
-    else:
-        st.error("❌ Output video could not be generated.")
+    with open(output_video.name, "rb") as f:
+        st.download_button(
+            label="⬇️ Download processed video",
+            data=f,
+            file_name="vehicle_detection_result.mp4",
+            mime="video/mp4"
+        )
 
-    st.success("🎉 Done! Thanks for using the app.")
+    st.success("🎉 Done! Video is ready to download.")
