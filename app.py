@@ -1,6 +1,3 @@
-import os
-os.environ["OPENCV_VIDEOIO_PRIORITY_MSMF"] = "0"
-
 import streamlit as st
 import cv2
 import tempfile
@@ -12,73 +9,60 @@ st.set_page_config(
     layout="centered"
 )
 
-st.markdown("## 🚦 Vehicle Detection App")
-st.markdown("### 🎯 Upload a vehicle video and download the processed result")
-st.markdown("**👨‍💻 Created by Gurudeep Soni**")
-st.markdown("---")
+st.title("🚦 Vehicle Detection App")
+st.write("Upload a video and download processed output")
 
-video = st.file_uploader("📤 Upload vehicle video", type=["mp4", "avi"])
+video = st.file_uploader("Upload video", type=["mp4", "avi"])
 
 if video:
-    # Save uploaded video
-    input_video = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-    input_video.write(video.read())
-    input_video.close()
+    # Save input
+    input_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
+    input_file.write(video.read())
+    input_file.close()
 
-    st.info("⏳ Loading YOLO model...")
+    st.info("Loading model...")
     model = YOLO("yolov8n.pt")
 
-    cap = cv2.VideoCapture(input_video.name)
+    cap = cv2.VideoCapture(input_file.name)
 
-    fps = int(cap.get(cv2.CAP_PROP_FPS))
-    if fps <= 0:
-        fps = 30
-
+    fps = int(cap.get(cv2.CAP_PROP_FPS)) or 30
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    output_video = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-    output_video.close()
+    output_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
+    output_file.close()
 
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    out = cv2.VideoWriter(output_video.name, fourcc, fps, (width, height))
+    out = cv2.VideoWriter(
+        output_file.name,
+        cv2.VideoWriter_fourcc(*"mp4v"),
+        fps,
+        (width, height)
+    )
 
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    progress_bar = st.progress(0)
-    status = st.empty()
-
+    progress = st.progress(0)
     frame_count = 0
-    st.success("🚀 Processing started...")
+    total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-    while cap.isOpened():
+    while True:
         ret, frame = cap.read()
         if not ret:
             break
 
         results = model(frame)
-        annotated = results[0].plot()
-        out.write(annotated)
+        out.write(results[0].plot())
 
         frame_count += 1
-        if total_frames > 0:
-            progress = int((frame_count / total_frames) * 100)
-            progress_bar.progress(min(progress, 100))
-            status.text(f"🔄 Processing: {progress}%")
+        if total:
+            progress.progress(int(frame_count / total * 100))
 
     cap.release()
     out.release()
 
-    progress_bar.progress(100)
-    status.text("✅ Processing complete!")
+    st.success("Done!")
 
-    st.markdown("### 📥 Download Result")
-
-    with open(output_video.name, "rb") as f:
+    with open(output_file.name, "rb") as f:
         st.download_button(
-            label="⬇️ Download processed video",
-            data=f,
-            file_name="vehicle_detection_result.mp4",
-            mime="video/mp4"
+            "Download Result",
+            f,
+            file_name="output.mp4"
         )
-
-    st.success("🎉 Done! Video is ready to download.")
