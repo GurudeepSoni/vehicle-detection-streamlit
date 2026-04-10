@@ -6,7 +6,7 @@ Upload any vehicle video and download the processed output with detections.
 --------------------------------------------------
 
 🔗 Live Demo
-https://vehicle-detection-app04.streamlit.app/
+https://vehicle-detection-app-kwrhor4dtwwsjqmardkb3s.streamlit.app/
 
 --------------------------------------------------
 
