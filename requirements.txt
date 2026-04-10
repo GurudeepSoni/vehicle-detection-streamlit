@@ -1,7 +1,7 @@
 -c constraints.txt
 streamlit
-ultralytics==8.0.230
-opencv-python-headless==4.11.0.86
+ultralytics
+opencv-python
 numpy<2
 torch
 torchvision
