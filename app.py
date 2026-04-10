@@ -1,8 +1,10 @@
+import os
+os.environ["OPENCV_VIDEOIO_PRIORITY_MSMF"] = "0"
+
 import streamlit as st
 import cv2
 import tempfile
 from ultralytics import YOLO
-import os
 
 st.set_page_config(
     page_title="Vehicle Detection",
@@ -54,7 +56,8 @@ if video:
             break
 
         results = model(frame)
-        out.write(results[0].plot())
+        annotated = results[0].plot()
+        out.write(annotated)
 
         frame_count += 1
         if total_frames > 0:
